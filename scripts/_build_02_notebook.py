@@ -74,8 +74,12 @@ print("cwd:", PROJECT_ROOT, "  colab:", IN_COLAB)
 """),
     md("s2-prep-header", "## 1. Data prep — crop SROIE lines for recognition\n"),
     code("s2-prep", """\
-# Crop SROIE GT lines if not done yet.
+# Download SROIE if missing (gitignored on Colab), then crop GT lines.
+if not (PROJECT_ROOT / "data/sroie/images/test").exists():
+    print("downloading SROIE…")
+    subprocess.check_call([sys.executable, "scripts/download_sroie.py"])
 if not (PROJECT_ROOT / "data/processed/recognition/train/labels.txt").exists():
+    print("cropping recognition lines…")
     subprocess.check_call([sys.executable, "-m", "src.data.prep_recognition"])
 print("train labels exist:",
       (PROJECT_ROOT / "data/processed/recognition/train/labels.txt").exists())
