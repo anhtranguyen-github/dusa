@@ -3,7 +3,7 @@ services:
     image: nvcr.io/nvidia/tritonserver:24.05-py3
     command: tritonserver --model-repository=/models --strict-model-config=false
     volumes:
-      - ../triton/model_repository:/models
+      - ../triton_repo/model_repository:/models
     ports:
       - "8001:8000"  # HTTP
       - "8002:8001"  # gRPC

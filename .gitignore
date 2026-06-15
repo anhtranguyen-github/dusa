@@ -49,9 +49,9 @@ checkpoints/**/*.onnx
 checkpoints/lora_adapters/*/
 
 # Triton — keep config.pbtxt, ignore weights
-triton/model_repository/**/*.onnx
-triton/model_repository/**/*.bin
-triton/model_repository/**/1/model.*
+triton_repo/model_repository/**/*.onnx
+triton_repo/model_repository/**/*.bin
+triton_repo/model_repository/**/1/model.*
 
 # Reports — keep markdown, ignore raw artifacts
 reports/**/*.png

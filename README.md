@@ -44,7 +44,7 @@ dusa/
 │   └── utils/
 ├── notebooks/                  One per session
 ├── configs/                    YAML/JSON training & serving configs
-├── triton/model_repository/    parseq/, layoutlmv3/, ensemble_kie/ (config.pbtxt)
+├── triton_repo/model_repository/    parseq/, layoutlmv3/, ensemble_kie/ (config.pbtxt)
 ├── docker/                     Dockerfiles + docker-compose.yml
 ├── data/                       SROIE (gitignored)
 ├── checkpoints/                Weights, LoRA adapters, ONNX (gitignored)
