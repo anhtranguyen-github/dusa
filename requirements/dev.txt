@@ -1,0 +1,4 @@
+# requirements/dev.txt
+pytest>=8
+pytest-xdist  # parallel test runs
+nbformat>=5.10
