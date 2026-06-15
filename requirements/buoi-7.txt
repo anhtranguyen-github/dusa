@@ -1,0 +1,8 @@
+torch>=2.2
+transformers>=4.40
+vllm
+fastapi
+uvicorn
+tritonclient[grpc,http]
+pydantic>=2
+tqdm

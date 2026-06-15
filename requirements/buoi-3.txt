@@ -1,0 +1,11 @@
+torch>=2.2
+torchvision
+transformers>=4.40
+seqeval
+datasets
+opencv-python
+pillow
+numpy
+pyyaml
+matplotlib
+tqdm

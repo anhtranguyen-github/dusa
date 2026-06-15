@@ -1,0 +1,15 @@
+torch>=2.2
+torchvision
+transformers>=4.40
+ultralytics
+shapely
+pyclipper
+python-doctr[torch]
+opencv-python
+pillow
+numpy
+pyyaml
+matplotlib
+tqdm
+timm
+editdistance

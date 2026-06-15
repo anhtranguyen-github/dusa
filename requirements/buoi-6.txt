@@ -1,0 +1,8 @@
+torch>=2.2
+transformers>=4.40
+onnx>=1.16
+onnxruntime
+onnxruntime-gpu
+tritonclient[grpc,http]
+matplotlib
+tqdm
