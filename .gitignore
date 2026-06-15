@@ -1,0 +1,74 @@
+# Byte-compiled / optimized
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual envs
+.venv/
+venv/
+env/
+.python-version
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Jupyter
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Datasets & weights (large binaries — keep out of git)
+data/sroie/images/
+data/sroie/annotations/
+data/sroie/splits/
+data/funsd/images/
+data/funsd/annotations/
+data/funsd/splits/
+data/cord/images/
+data/cord/annotations/
+data/cord/splits/
+data/vn_receipts/images/
+data/vn_receipts/annotations/
+data/vn_receipts/splits/
+data/processed/
+data/word_crops/
+checkpoints/**/*.pth
+checkpoints/**/*.ckpt
+checkpoints/**/*.bin
+checkpoints/**/*.safetensors
+checkpoints/**/*.onnx
+checkpoints/lora_adapters/*/
+
+# Triton — keep config.pbtxt, ignore weights
+triton/model_repository/**/*.onnx
+triton/model_repository/**/*.bin
+triton/model_repository/**/1/model.*
+
+# Reports — keep markdown, ignore raw artifacts
+reports/**/*.png
+reports/**/*.jpg
+reports/**/*.csv
+
+# Env / secrets
+.env
+.env.local
+*.local
+
+# Logs
+*.log
+logs/
+
+# Docker
+.docker/
+
+# OS
+Thumbs.db

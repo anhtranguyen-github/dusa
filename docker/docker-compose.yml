@@ -1,0 +1,46 @@
+services:
+  triton:
+    image: nvcr.io/nvidia/tritonserver:24.05-py3
+    command: tritonserver --model-repository=/models --strict-model-config=false
+    volumes:
+      - ../triton/model_repository:/models
+    ports:
+      - "8001:8000"  # HTTP
+      - "8002:8001"  # gRPC
+      - "8003:8002"  # metrics
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+
+  vllm:
+    image: vllm/vllm-openai:latest
+    command: >
+      --model Qwen/Qwen2.5-3B-Instruct
+      --enable-lora
+      --lora-modules sroie=/adapters/qwen25_3b_sroie_lora
+    volumes:
+      - ../checkpoints/lora_adapters:/adapters
+    ports:
+      - "8004:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    environment:
+      TRITON_URL: triton:8001
+      VLLM_URL: http://vllm:8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - triton
+      - vllm

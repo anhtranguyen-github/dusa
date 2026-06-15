@@ -1,0 +1,23 @@
+# Triton config for PARSeq OCR (ONNX backend).
+# Populated in Session 6 after exporting parseq.onnx into ./1/model.onnx
+name: "parseq"
+platform: "onnxruntime_onnx"
+max_batch_size: 32
+input [
+  {
+    name: "image"
+    data_type: TYPE_FP32
+    dims: [3, 32, 128]
+  }
+]
+output [
+  {
+    name: "logits"
+    data_type: TYPE_FP32
+    dims: [-1, -1]
+  }
+]
+dynamic_batching {
+  preferred_batch_size: [8, 16]
+  max_queue_delay_microseconds: 5000
+}
