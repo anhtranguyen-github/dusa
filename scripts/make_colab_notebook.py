@@ -1,143 +1,114 @@
-"""One-shot: build notebooks/01_detection_benchmark_colab.ipynb from the local variant.
+"""Generate the Colab variant of a session notebook.
 
-Replaces the local setup cells with Colab bootstrap (Drive mount, repo clone,
-pip install, SROIE download), bumps MixNet batch to 8 (Colab T4 has 15 GB VRAM),
-and clears cell outputs so the published notebook is clean.
+Usage:
+    python scripts/make_colab_notebook.py --session 1
+    python scripts/make_colab_notebook.py --session 2
+
+The local notebook stays the source of truth; this script prepends a Colab
+bootstrap (install uv, clone repo, cd) and clears outputs. All session
+notebooks use the same 3-cell uv install pattern internally, so the bootstrap
+is uniform.
 """
 from __future__ import annotations
 
-import copy
+import argparse
 import json
 from pathlib import Path
 
-SRC = Path("notebooks/01_detection_benchmark.ipynb")
-DST = Path("notebooks/colab/01_detection_benchmark.ipynb")
-
 REPO_URL = "https://github.com/anhtranguyen-github/dusa.git"
 
+SESSION_TITLES = {
+    1: "Buổi 1 — Layout & Text Detection",
+    2: "Buổi 2 — Text Recognition (OCR)",
+    3: "Buổi 3 — KIE: LayoutLMv3 Fine-tune",
+    4: "Buổi 4 — LLM & Qwen2.5-3B KIE",
+    5: "Buổi 5 — Vision-Language Models",
+    6: "Buổi 6 — ONNX & Triton",
+    7: "Buổi 7 — Triton Ensemble + vLLM + FastAPI (1)",
+    8: "Buổi 8 — FastAPI Dual-Backend (2)",
+    9: "Buổi 9 — Capstone E2E",
+    10: "Buổi 10 — Demo & Wrap-up",
+}
 
-def mkmd(cid: str, src: str) -> dict:
-    return {"cell_type": "markdown", "id": cid, "metadata": {}, "source": src.splitlines(keepends=True)}
-
-
-def mkcode(cid: str, src: str) -> dict:
-    return {"cell_type": "code", "id": cid, "metadata": {}, "execution_count": None,
-            "outputs": [], "source": src.splitlines(keepends=True)}
-
-
-COLAB_HEADER = mkmd("colab-header", f"""# Buổi 1 — Layout & Text Detection (Colab)
-
-<a href="https://colab.research.google.com/github/anhtranguyen-github/dusa/blob/main/notebooks/colab/01_detection_benchmark.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
-
-Run order:
-1. **Runtime → Change runtime type → GPU** (T4 or better).
-2. Run the four bootstrap cells below (mount Drive, clone repo, install deps, download SROIE) — ~3-5 min.
-3. Then run the rest of the notebook top-to-bottom as in the local version.
-
-> ⚙ Edit `REPO_URL` in the clone cell if your fork lives elsewhere.
-
-## Bootstrap (Colab only)
-""")
-
-
-COLAB_DRIVE = mkcode("colab-drive", """# (Optional) mount Drive so checkpoints + figures persist across Colab sessions.
-# Skip this cell if you only need a one-off run.
-from google.colab import drive
-drive.mount('/content/drive')
-""")
+SESSION_FILENAMES = {
+    1: "01_detection_benchmark.ipynb",
+    2: "02_ocr_finetune_parseq.ipynb",
+    3: "03_kie_layoutlmv3_finetune.ipynb",
+    4: "04_qwen_kie_zeroshot_and_qlora.ipynb",
+    5: "05_vlm_zeroshot_demo.ipynb",
+    6: "06_onnx_triton_export.ipynb",
+    7: "07_triton_ensemble_vllm.ipynb",
+    8: "08_fastapi_dual_backend.ipynb",
+    9: "09_capstone_e2e.ipynb",
+    10: "10_demo_final.ipynb",
+}
 
 
-COLAB_CLONE = mkcode("colab-clone", f"""import os, subprocess
-REPO_URL = "{REPO_URL}"  # ← edit if your fork is elsewhere
-REPO_DIR = "/content/dusa"
-
-if not os.path.isdir(REPO_DIR):
-    print('cloning', REPO_URL)
-    subprocess.run(['git', 'clone', '--depth', '1', REPO_URL, REPO_DIR], check=True)
-else:
-    print('pulling latest in', REPO_DIR)
-    subprocess.run(['git', '-C', REPO_DIR, 'pull', '--ff-only'], check=True)
-%cd $REPO_DIR
-!ls
-""")
+def _mkmd(cid: str, src: str) -> dict:
+    return {"cell_type": "markdown", "id": cid, "metadata": {},
+            "source": src.splitlines(keepends=True)}
 
 
-COLAB_PIP = mkcode("colab-pip", """# Colab ships torch + matplotlib + pandas + opencv; install the rest.
-%pip install -q timm shapely pyclipper python-doctr[torch] datasets editdistance
-import torch
-print('torch', torch.__version__, 'cuda', torch.cuda.is_available(),
-      torch.cuda.get_device_name(0) if torch.cuda.is_available() else '')
-""")
+def _mkcode(cid: str, src: str) -> dict:
+    return {"cell_type": "code", "id": cid, "metadata": {},
+            "execution_count": None, "outputs": [],
+            "source": src.splitlines(keepends=True)}
 
 
-COLAB_DATA = mkcode("colab-data", """# Download SROIE (≈30 s; 522 train + 130 test receipts).
-import os
-if not os.path.isdir('data/sroie/images/test'):
-    !python scripts/download_sroie.py
-else:
-    print('SROIE already present')
-!ls data/sroie/images/train | head -3 && echo ... && ls data/sroie/images/test | wc -l
-""")
+def _colab_header_cells(session: int, fname: str, repo_url: str) -> list[dict]:
+    title = SESSION_TITLES[session]
+    badge = (
+        f'<a href="https://colab.research.google.com/github/anhtranguyen-github/dusa/'
+        f'blob/main/notebooks/colab/{fname}" target="_parent">'
+        f'<img src="https://colab.research.google.com/assets/colab-badge.svg" '
+        f'alt="Open In Colab"/></a>'
+    )
+    header_md = (
+        f"# {title} (Colab)\n\n{badge}\n\n"
+        f"Runtime → Change runtime type → GPU (T4 or better), then run all cells.\n\n"
+        f"## Colab bootstrap\n"
+    )
+    bootstrap_code = (
+        "# Install uv, clone repo, cd in. Idempotent — safe to re-run.\n"
+        "!pip install -q uv\n"
+        f"!git clone -q {repo_url} /content/dusa || git -C /content/dusa pull --ff-only\n"
+        "%cd /content/dusa\n"
+        "import os; print('cwd:', os.getcwd())\n"
+    )
+    return [_mkmd(f"colab-h-{session}", header_md),
+            _mkcode(f"colab-b-{session}", bootstrap_code)]
 
 
-COLAB_IMPORTS = mkcode("colab-imports", """# Same imports as the local notebook — re-uses src/ now that we cd'd into the repo.
-import os, sys
-PROJECT_ROOT = os.getcwd()
-sys.path.insert(0, PROJECT_ROOT)
-print('cwd:', PROJECT_ROOT)
-
-from src.data.sroie_loader import list_ids, iter_split
-from src.detection import DBNetDetector, MixNetDetector, evaluate_image, aggregate, draw_overlay
-print('SROIE test images available:', len(list_ids('test')))
-""")
-
-
-def main() -> None:
-    nb = json.loads(SRC.read_text())
-
-    # Drop the two local-setup cells: 6712b6b4 (path setup) and 58e0617f (imports).
-    LOCAL_SETUP_IDS = {"6712b6b4", "58e0617f"}
-    kept = [c for c in nb["cells"] if c.get("id") not in LOCAL_SETUP_IDS]
-
-    # Replace the original top-level title (cell 00319509) with the Colab header.
-    new_cells = []
-    for c in kept:
-        if c.get("id") == "00319509":
-            # Replace with Colab header + bootstrap (Drive optional, clone, pip, data, imports).
-            new_cells.extend([COLAB_HEADER, COLAB_DRIVE, COLAB_CLONE, COLAB_PIP, COLAB_DATA, COLAB_IMPORTS])
-        else:
-            new_cells.append(c)
-
-    # Clear outputs + execution counts (clean publish state).
-    for c in new_cells:
+def build_colab_notebook(session: int, src: Path, dst: Path, repo_url: str = REPO_URL) -> None:
+    """Read local notebook, prepend Colab bootstrap, clear outputs, write dst."""
+    nb = json.loads(Path(src).read_text())
+    bootstrap = _colab_header_cells(session, SESSION_FILENAMES[session], repo_url)
+    nb["cells"] = bootstrap + nb["cells"]
+    for c in nb["cells"]:
         if c["cell_type"] == "code":
             c["outputs"] = []
             c["execution_count"] = None
-
-    # Bump MixNet batch_size to 8 in the fine-tune cell (Colab T4 has 15 GB).
-    for c in new_cells:
-        if c.get("id") == "05f3226e":
-            src = "".join(c["source"]) if isinstance(c["source"], list) else c["source"]
-            src = src.replace(
-                "'mixnet_finetuned': {'backbone': 'mixnet_l',              'batch_size': 4, 'short': 'mixnet'},",
-                "'mixnet_finetuned': {'backbone': 'mixnet_l',              'batch_size': 8, 'short': 'mixnet'},",
-            )
-            src = src.replace(
-                "- **MixNet side** — `mixnet_l`, batch 4 (8 GB VRAM doesn't fit batch 8 at 736²).",
-                "- **MixNet side** — `mixnet_l`, batch 8 (Colab T4/L4 ≥15 GB fits comfortably).",
-            )
-            c["source"] = src.splitlines(keepends=True)
-
-    # Drop the local-only "next steps" stale wording about checkpoints living locally.
-    nb["cells"] = new_cells
+    nb.setdefault("metadata", {})
     nb["metadata"]["colab"] = {"provenance": [], "toc_visible": True}
-    nb["metadata"]["kernelspec"] = {
-        "display_name": "Python 3", "language": "python", "name": "python3"
-    }
+    nb["metadata"]["kernelspec"] = {"display_name": "Python 3",
+                                    "language": "python", "name": "python3"}
+    dst = Path(dst)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    dst.write_text(json.dumps(nb, indent=1) + "\n")
 
-    DST.parent.mkdir(parents=True, exist_ok=True)
-    DST.write_text(json.dumps(nb, indent=1) + "\n")
-    print(f"wrote {DST}  ({len(new_cells)} cells)")
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--session", type=int, required=True, choices=range(1, 11))
+    ap.add_argument("--repo-url", default=REPO_URL)
+    args = ap.parse_args()
+    fname = SESSION_FILENAMES[args.session]
+    src = Path("notebooks") / fname
+    dst = Path("notebooks/colab") / fname
+    if not src.exists():
+        raise SystemExit(f"local notebook missing: {src}")
+    build_colab_notebook(args.session, src, dst, args.repo_url)
+    print(f"wrote {dst}")
 
 
 if __name__ == "__main__":
