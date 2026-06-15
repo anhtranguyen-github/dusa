@@ -1,0 +1,15 @@
+# requirements/buoi-2.txt — Buổi 2: Text Recognition (OCR)
+torch>=2.2
+torchvision
+transformers>=4.40
+datasets
+editdistance
+opencv-python
+pillow
+numpy
+pyyaml
+matplotlib
+tqdm
+timm                  # PARSeq vit_small backbone
+ftfy                  # transformers tokenizer helper
+sentencepiece         # trocr tokenizer
