@@ -1,0 +1,35 @@
+# Fine-tune LayoutLMv3 on SROIE for KIE (Buổi 3).
+# Consumed by `python -m src.kie.layoutlm.train --config configs/kie/layoutlmv3_sroie.yaml`
+
+data:
+  prepared_dir: data/processed/kie         # produced by src.data.prep_kie
+  train_jsonl: train.jsonl
+  test_jsonl:  test.jsonl
+  label_list:  label_list.json
+
+model:
+  pretrained: microsoft/layoutlmv3-base
+  max_length: 512
+
+train:
+  output_dir: checkpoints/kie/layoutlmv3
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 8
+  learning_rate: 5.0e-5
+  num_train_epochs: 8
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  logging_steps: 25
+  eval_strategy: epoch                  # transformers >= 4.40 key name
+  save_strategy: epoch
+  load_best_model_at_end: true
+  metric_for_best_model: f1_macro
+  greater_is_better: true
+  fp16: false                           # set true on GPU; CPU stays fp32
+  label_smoothing_factor: 0.05
+
+eval:
+  per_field: true                       # report F1 per COMPANY/DATE/ADDRESS/TOTAL
+  exact_match: true
+
+checkpoint_alias: layoutlmv3_sroie_kie.bin

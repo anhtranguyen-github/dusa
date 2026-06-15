@@ -1,0 +1,47 @@
+# Fine-tune PARSeq on SROIE line crops (Buổi 2).
+# Consumed by `python -m src.recognition.train_parseq --config configs/recognition/parseq_sroie.yaml`
+#
+# We fine-tune `baudm/parseq-tiny` (lighter weights) on the SROIE crops produced
+# by `src/data/prep_recognition.py`. The full `parseq-base` is also supported —
+# swap the `pretrained` key.
+
+data:
+  root: data/processed/recognition
+  train_labels: train/labels.txt
+  test_labels:  test/labels.txt
+  charset: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,:;()/-+*$%&'@!?#&*[] "
+  max_label_length: 32          # SROIE lines fit in 32 chars after stripping headers
+  image_height: 32
+  image_width: 128
+  num_workers: 4
+
+model:
+  pretrained: baudm/parseq-tiny     # baudm/parseq or baudm/parseq-tiny
+  freeze_backbone: false
+
+train:
+  batch_size: 64
+  lr: 7.0e-4
+  weight_decay: 0.01
+  warmup_pct: 0.075               # cosine schedule with 7.5% warmup (PARSeq default)
+  max_epochs: 10
+  precision: bf16-mixed           # set to "32" for CPU smoke test
+  grad_clip_norm: 20.0
+  accumulate_grad_batches: 1
+  augment:
+    rotate_deg: 5
+    perspective: true
+    color_jitter: 0.2
+    blur_max_sigma: 1.5
+
+eval:
+  metric_iou_thresh: 0.5
+  every_n_epochs: 1
+  log_first_n_predictions: 16
+
+checkpoint:
+  output_dir: checkpoints/recognition
+  filename: parseq_sroie_finetuned.ckpt
+  save_top_k: 1
+  monitor: val/cer
+  monitor_mode: min

@@ -1,0 +1,54 @@
+# Fine-tune MixNet on SROIE for text detection (Buổi 1).
+# Consumed by `python -m src.detection.train_mixnet --config configs/detection/mixnet_sroie.yaml`
+#
+# NOTE: MixNet is research-grade — there is no first-class pip package. The
+# upstream reference is https://github.com/D-X-Y/MixNet-PyTorch (image
+# classification backbone) and the original text-detection variant is published
+# by the MixNet paper authors. Vendor the architecture under
+# src/detection/mixnet_arch.py before running this script.
+
+data:
+  sroie_root: data/sroie               # produced by scripts/download_sroie.py
+  splits:
+    train: train
+    test:  test
+  image_height: 736                    # standard DBNet-style training size
+  image_width: 736
+  min_text_size: 6
+  num_workers: 4
+
+augmentation:
+  rotate_deg: 10
+  scale_min: 0.5
+  scale_max: 2.5
+  random_crop: true
+  color_jitter: 0.4
+  noise_p: 0.2
+
+model:
+  backbone: mixnet_l                   # mixnet_s | mixnet_m | mixnet_l
+  pretrained_backbone: timm            # load timm-pretrained ImageNet weights
+  head_channels: 256
+  binarize_k: 50.0                     # DB-style binarization steepness
+
+train:
+  batch_size: 8
+  lr: 7.0e-4
+  warmup_steps: 1000                   # lr warmup (per curriculum lab spec)
+  max_epochs: 60
+  optimizer: adamw
+  weight_decay: 1.0e-4
+  loss:
+    bce_weight: 1.0                    # text probability map
+    dice_weight: 1.0                   # shrink map
+    l1_weight: 10.0                    # threshold map
+  grad_clip_norm: 5.0
+
+eval:
+  iou_thresh: 0.5
+  every_n_epochs: 2
+
+checkpoint:
+  output_dir: checkpoints/detection
+  filename: mixnet_sroie_finetuned.pth
+  save_top_k: 1

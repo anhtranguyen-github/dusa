@@ -1,0 +1,41 @@
+# Qwen2.5-3B SROIE KIE (Buổi 4). Conditional fine-tune: only run train_lora.py
+# when zero-shot Macro F1 on SROIE test < 0.85 (curriculum gate).
+
+model:
+  pretrained: Qwen/Qwen2.5-3B-Instruct
+  trust_remote_code: true
+
+data:
+  prepared_dir: data/processed/instructions     # produced by src.data.prep_instructions
+  train_jsonl: sroie_kie_instructions_train.jsonl
+  test_jsonl:  sroie_kie_instructions_test.jsonl
+  targets:     sroie_kie_test_targets.json
+  max_seq_length: 2048
+
+zero_shot:
+  output_dir: reports/benchmarks
+  result_filename: qwen_zeroshot_results.json
+  f1_threshold: 0.85          # if Macro F1 ≥ this, skip fine-tune
+  sample_limit: null          # null = full test set (130); set 20 for a CPU smoke run
+  max_new_tokens: 256
+  temperature: 0.0
+
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+  bias: none
+
+train:
+  output_dir: checkpoints/lora_adapters/qwen25_3b_sroie_lora
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 16
+  learning_rate: 2.0e-4
+  num_train_epochs: 3
+  warmup_ratio: 0.05
+  weight_decay: 0.0
+  logging_steps: 10
+  save_strategy: epoch
+  bf16: true
+  load_4bit: true              # QLoRA — requires bitsandbytes
