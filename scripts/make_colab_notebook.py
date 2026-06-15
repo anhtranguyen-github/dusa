@@ -13,7 +13,7 @@ from pathlib import Path
 SRC = Path("notebooks/01_detection_benchmark.ipynb")
 DST = Path("notebooks/colab/01_detection_benchmark.ipynb")
 
-REPO_URL = "https://github.com/YOUR_USER/dusa.git"  # ← edit before publishing
+REPO_URL = "https://github.com/anhtranguyen-github/dusa.git"
 
 
 def mkmd(cid: str, src: str) -> dict:
@@ -27,7 +27,7 @@ def mkcode(cid: str, src: str) -> dict:
 
 COLAB_HEADER = mkmd("colab-header", f"""# Buổi 1 — Layout & Text Detection (Colab)
 
-<a href="https://colab.research.google.com/github/YOUR_USER/dusa/blob/main/notebooks/colab/01_detection_benchmark.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+<a href="https://colab.research.google.com/github/anhtranguyen-github/dusa/blob/main/notebooks/colab/01_detection_benchmark.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 Run order:
 1. **Runtime → Change runtime type → GPU** (T4 or better).
