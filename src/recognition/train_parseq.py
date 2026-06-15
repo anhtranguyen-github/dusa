@@ -26,6 +26,14 @@ from torch.utils.data import DataLoader
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def append_history(path, record: dict) -> None:
+    """Append one JSON record per epoch — used to plot training curves later."""
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    with open(p, "a", encoding="utf-8") as f:
+        f.write(json.dumps(record) + "\n")
+
+
 def _build_loaders(cfg: dict):
     from .dataset import SROIERecognitionDataset
     d = cfg["data"]
@@ -124,6 +132,11 @@ def main() -> None:
     train_loader, test_loader = _build_loaders(cfg)
     print(f"train batches: {len(train_loader)}  test batches: {len(test_loader)}")
 
+    history_path = ROOT / cfg["checkpoint"]["output_dir"] / "parseq_metrics_history.jsonl"
+    history_path.parent.mkdir(parents=True, exist_ok=True)
+    if history_path.exists():
+        history_path.unlink()
+
     model = _load_model(cfg).to(device)
     if cfg["model"].get("freeze_backbone"):
         for p in getattr(model, "encoder", []).parameters():
@@ -163,6 +176,12 @@ def main() -> None:
         metrics = evaluate(model, test_loader, device,
                            log_first_n=cfg["eval"]["log_first_n_predictions"])
         print(f"epoch {epoch}: CER={metrics['cer']:.4f}  WER={metrics['wer']:.4f}")
+        append_history(history_path, {
+            "epoch": epoch,
+            "loss": float(loss.item()) if "loss" in dir() else None,
+            "cer": metrics["cer"],
+            "wer": metrics["wer"],
+        })
 
     out = ROOT / cfg["checkpoint"]["output_dir"] / cfg["checkpoint"]["filename"]
     out.parent.mkdir(parents=True, exist_ok=True)
