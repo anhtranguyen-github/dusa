@@ -71,15 +71,23 @@ dusa/
 ## Quick start
 
 ```bash
+# Each session notebook installs its own deps via uv (per-session requirements).
+# Bootstrap locally before opening Jupyter:
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install uv jupyter
 
-# Fetch SROIE (652 receipts → 522 train / 130 test, deterministic seed=42)
+# Pre-fetch SROIE (each notebook also calls this on first run).
 python scripts/download_sroie.py
+
+# Open the session you want — cell 2 writes requirements/buoi-N.txt,
+# cell 3 runs `uv pip install --system -r requirements/buoi-N.txt`.
+jupyter lab notebooks/02_ocr_finetune_parseq.ipynb
 
 # Run FastAPI (after S8)
 uvicorn src.api.main:app --reload
 ```
+
+Each session pins its own dependencies in `requirements/buoi-N.txt` (committed at rest, also (re)written by the notebook's `%%writefile` cell at run time). There is no shared root `requirements.txt`.
 
 ## Datasets
 
